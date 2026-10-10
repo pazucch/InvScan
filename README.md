@@ -4,7 +4,7 @@ App Android (Kotlin + Jetpack Compose) de inventário de patrimônio. Trabalho 2
 
 **Integrantes:** Mateus P., Ellyson V., André G.
 
-📄 **Documentação do processo e das decisões (com prints):** [`docs/DOCUMENTACAO.md`](docs/DOCUMENTACAO.md)
+ **Documentação do processo e das decisões (com prints):** [`docs/DOCUMENTACAO.md`](docs/DOCUMENTACAO.md)
 
 ## O que o app faz
 - Lista, pesquisa, cadastra, edita e remove **patrimônios**
