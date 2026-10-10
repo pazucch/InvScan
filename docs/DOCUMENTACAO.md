@@ -22,7 +22,7 @@ O **InvScan** é um app de inventário de patrimônio. Ele permite cadastrar ite
 | Código | 1 arquivo grande | 29 arquivos organizados por responsabilidade |
 | Visual | 3 estilos de barra diferentes | tema único (claro e escuro) e componentes padronizados |
 
-📸 **Prints do Trabalho 1:**
+ **Prints do Trabalho 1:**
 
 ![Início no Trabalho 1](prints/00-trabalho1-inicio.png)
 ![Patrimônio no Trabalho 1](prints/00-trabalho1-patrimonio.png)
@@ -48,7 +48,7 @@ O protótipo (wireframe) do grupo tinha 5 telas: Início, Criar Item, Usuário, 
 | 10 | **Configurações** | Confirmar exclusões, tema escuro, texto grande e acesso ao Suporte | Vem do wireframe. Todas as opções realmente mudam o app |
 | 11 | **Suporte** | Perguntas frequentes e formulário de contato | Dá função ao botão de *headset* do wireframe |
 
-📸 **Prints:**
+ **Prints:**
 
 | | | |
 |---|---|---|
@@ -114,7 +114,7 @@ No **Detalhe do patrimônio**, a tela vai além de só mostrar os dados do item:
 
 **Por que essa escolha:** em um app de inventário, a pergunta mais comum é "onde está esse item e o que mais está lá?". Ligar item e local responde isso, e editar no detalhe evita ter que apagar e recriar um item para corrigir um dado.
 
-📸 ![Detalhe](prints/04-detalhe-patrimonio.png) ![Detalhe em edição](prints/05-detalhe-patrimonio-edicao.png)
+ ![Detalhe](prints/04-detalhe-patrimonio.png) ![Detalhe em edição](prints/05-detalhe-patrimonio-edicao.png)
 
 ---
 
