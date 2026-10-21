@@ -1,27 +1,39 @@
 package com.example.exibirpatrimoniosactivity.viewmodel
 
+import android.app.Application
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import com.example.exibirpatrimoniosactivity.data.AppDatabase
 import com.example.exibirpatrimoniosactivity.data.Configuracoes
 import com.example.exibirpatrimoniosactivity.data.Conquista
-import com.example.exibirpatrimoniosactivity.data.DadosIniciais
 import com.example.exibirpatrimoniosactivity.data.Local
 import com.example.exibirpatrimoniosactivity.data.Patrimonio
 import com.example.exibirpatrimoniosactivity.data.PerfilUsuario
 import com.example.exibirpatrimoniosactivity.data.TipoPatrimonio
+import com.example.exibirpatrimoniosactivity.data.paraTexto
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
- * Guarda todo o estado do app (só em memória, como pede o Trabalho 2).
- * As listas são mutableStateListOf: qualquer mudança recompõe as telas.
+ * Patrimônios e locais agora são gravados no banco (Room).
+ * As listas continuam sendo mutableStateListOf, então as telas não mudam:
+ * a lista em memória é o que a tela mostra e cada alteração também vai para o banco.
+ * Perfil e configurações continuam só em memória.
  */
-class InvScanViewModel : ViewModel() {
+class InvScanViewModel(application: Application) : AndroidViewModel(application) {
 
-    val patrimonios = mutableStateListOf<Patrimonio>().apply { addAll(DadosIniciais.patrimonios) }
-    val locais = mutableStateListOf<Local>().apply { addAll(DadosIniciais.locais) }
+    private val db = AppDatabase.getDatabase(application)
+    private val patrimonioDAO = db.patrimonioDAO()
+    private val localDAO = db.localDAO()
+
+    val patrimonios = mutableStateListOf<Patrimonio>()
+    val locais = mutableStateListOf<Local>()
 
     var perfil by mutableStateOf(PerfilUsuario())
         private set
@@ -29,8 +41,82 @@ class InvScanViewModel : ViewModel() {
     var config by mutableStateOf(Configuracoes())
         private set
 
-    private var proximoPatrimonioId = (patrimonios.maxOfOrNull { it.id } ?: 0) + 1
-    private var proximoLocalId = (locais.maxOfOrNull { it.id } ?: 0) + 1
+    private var proximoPatrimonioId = 1
+    private var proximoLocalId = 1
+
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            carregarDoBanco()
+        }
+    }
+
+    // ---------- Banco de dados ----------
+
+    private suspend fun carregarDoBanco() {
+        try {
+            val locaisBD = localDAO.buscarLocais()
+            val patrimoniosBD = patrimonioDAO.buscarPatrimonios()
+
+            locais.clear()
+            locais.addAll(locaisBD)
+            patrimonios.clear()
+            patrimonios.addAll(patrimoniosBD)
+
+            proximoLocalId = (locais.maxOfOrNull { it.id } ?: 0) + 1
+            proximoPatrimonioId = (patrimonios.maxOfOrNull { it.id } ?: 0) + 1
+
+            Log.d("Busca Ok", "... ${patrimonios.size} patrimonios, ${locais.size} locais")
+        } catch (e: Exception) {
+            Log.e("Erro ao buscar", "Msg: ${e.message}")
+        }
+    }
+
+    private suspend fun inserirPatrimonioBD(p: Patrimonio) {
+        try {
+            patrimonioDAO.inserir(p)
+        } catch (e: Exception) {
+            Log.e("erro ao inserir", "Msg ${e.message}")
+        }
+    }
+
+    private suspend fun atualizarPatrimonioBD(p: Patrimonio) {
+        try {
+            patrimonioDAO.atualizar(p)
+        } catch (e: Exception) {
+            Log.e("erro ao atualizar", "Msg ${e.message}")
+        }
+    }
+
+    private suspend fun deletarPatrimonioBD(p: Patrimonio) {
+        try {
+            patrimonioDAO.deletar(p)
+        } catch (e: Exception) {
+            Log.e("erro ao deletar", "Msg ${e.message}")
+        }
+    }
+
+    private suspend fun inserirLocalBD(l: Local) {
+        try {
+            localDAO.inserir(l)
+        } catch (e: Exception) {
+            Log.e("erro ao inserir", "Msg ${e.message}")
+        }
+    }
+
+    private suspend fun atualizarLocalBD(l: Local) {
+        try {
+            localDAO.atualizar(l)
+        } catch (e: Exception) {
+            Log.e("erro ao atualizar", "Msg ${e.message}")
+        }
+    }
+
+    private suspend fun deletarLocalBD(l: Local) {
+        try {
+            localDAO.deletar(l)        } catch (e: Exception) {
+            Log.e("erro ao deletar", "Msg ${e.message}")
+        }
+    }
 
     // ---------- Patrimônios ----------
 
@@ -56,7 +142,7 @@ class InvScanViewModel : ViewModel() {
         return String.format(Locale.ROOT, "2-%06d", maior + 1)
     }
 
-    /** Cria o item (no topo da lista) e devolve o id dele. */
+    /** Cria o item (no topo da lista), grava no banco e devolve o id dele. */
     fun adicionarPatrimonio(
         nome: String,
         tipo: TipoPatrimonio,
@@ -76,15 +162,19 @@ class InvScanViewModel : ViewModel() {
             tipo = tipo,
             localId = localId,
             prateleira = prateleira.trim(),
-            imagens = imagens
+            imagens = imagens.paraTexto()
         )
         patrimonios.add(0, novo)
+        CoroutineScope(Dispatchers.IO).launch { inserirPatrimonioBD(novo) }
         return novo.id
     }
 
     fun atualizarPatrimonio(atualizado: Patrimonio) {
         val indice = patrimonios.indexOfFirst { it.id == atualizado.id }
-        if (indice >= 0) patrimonios[indice] = atualizado
+        if (indice >= 0) {
+            patrimonios[indice] = atualizado
+            CoroutineScope(Dispatchers.IO).launch { atualizarPatrimonioBD(atualizado) }
+        }
     }
 
     fun alternarConferido(id: Int) {
@@ -92,7 +182,9 @@ class InvScanViewModel : ViewModel() {
     }
 
     fun removerPatrimonio(id: Int) {
+        val patrimonio = buscarPatrimonio(id) ?: return
         patrimonios.removeAll { it.id == id }
+        CoroutineScope(Dispatchers.IO).launch { deletarPatrimonioBD(patrimonio) }
     }
 
     // ---------- Locais ----------
@@ -104,18 +196,26 @@ class InvScanViewModel : ViewModel() {
     fun patrimoniosDoLocal(localId: Int): List<Patrimonio> = patrimonios.filter { it.localId == localId }
 
     fun adicionarLocal(nome: String, descricao: String) {
-        locais.add(Local(proximoLocalId++, nome.trim(), descricao.trim()))
+        val novo = Local(proximoLocalId++, nome.trim(), descricao.trim())
+        locais.add(novo)
+        CoroutineScope(Dispatchers.IO).launch { inserirLocalBD(novo) }
     }
 
     fun atualizarLocal(atualizado: Local) {
         val indice = locais.indexOfFirst { it.id == atualizado.id }
-        if (indice >= 0) locais[indice] = atualizado
+        if (indice >= 0) {
+            locais[indice] = atualizado
+            CoroutineScope(Dispatchers.IO).launch { atualizarLocalBD(atualizado) }
+        }
     }
 
     /** Só remove locais sem itens. Devolve false se não puder remover. */
     fun removerLocal(id: Int): Boolean {
         if (patrimonios.any { it.localId == id }) return false
-        return locais.removeAll { it.id == id }
+        val local = buscarLocal(id) ?: return false
+        locais.removeAll { it.id == id }
+        CoroutineScope(Dispatchers.IO).launch { deletarLocalBD(local) }
+        return true
     }
 
     // ---------- Perfil e configurações ----------
