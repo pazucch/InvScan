@@ -60,8 +60,6 @@ plugins {
 
 Use the project's existing plugin-management setup if KSP is already declared in the root build or version catalog; do not declare the same plugin twice. Ensure `google()` is present in the dependency repositories. The exact Activity, Navigation, Lifecycle, Compose BOM, Android Gradle Plugin, Kotlin, and KSP versions cannot be verified from this source-only ZIP because the Gradle configuration is not included.
 
-Official Room 3 setup: [Android Developers — Room 3](https://developer.android.com/jetpack/androidx/releases/room3).
-
 ## Run the app
 
 1. Open the complete project in Android Studio.
