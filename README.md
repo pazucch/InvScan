@@ -4,7 +4,7 @@ InvScan is an Android inventory app built with Kotlin and Jetpack Compose. It wa
 
 **Team:** Mateus P., Ellyson V., André G.
 
-Project decisions and implementation notes are documented in [`DOCUMENTACAO.md`](DOCUMENTACAO.md).
+Project decisions and implementation notes are documented in [`DOCUMENTACAO.md`](docs/DOCUMENTACAO.md).
 
 ## Features
 

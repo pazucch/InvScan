@@ -128,8 +128,6 @@ plugins {
 }
 ```
 
-Verifique também se o repositório `google()` está disponível na configuração de repositórios. Documentação oficial: [Android Developers — Room 3](https://developer.android.com/jetpack/androidx/releases/room3).
-
 ### Como executar
 
 1. Abra o projeto Android Studio completo, não apenas a pasta de arquivos Kotlin.
