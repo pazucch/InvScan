@@ -1,168 +1,232 @@
-# InvScan — Documentação do processo e das decisões
-
-> **Grupo:** Mateus F., Ellyson V., André G.  
-> **Disciplina:** Desenvolvimento de Aplicativos Móveis
+# InvScan — Documentação do processo e das decisões (Trabalho 3: Persistência com Room)
 
 ## 1. Visão geral
 
-O **InvScan** é um aplicativo Android para inventário de patrimônio, desenvolvido em Kotlin com Jetpack Compose. Ele permite cadastrar itens, organizar os itens por local, marcar patrimônios conferidos, pesquisar por nome/código/série e consultar os detalhes de patrimônios e locais.
+O **InvScan** é um aplicativo Android de inventário de patrimônio, feito em Kotlin com Jetpack Compose. Ele permite cadastrar itens, organizá-los por local, marcar patrimônios como conferidos, pesquisar por nome, código ou série e consultar os detalhes de patrimônios e locais.
 
-**Mudança importante em relação à documentação anterior:** patrimônios e locais agora são persistidos em um banco de dados local usando **Room 3**. Perfil e configurações ainda ficam apenas no estado em memória. Portanto, não é correto dizer que todos os dados se perdem ao fechar o aplicativo.
+No Trabalho 3, **patrimônios e locais passaram a ser gravados em um banco local com Room 3** e continuam disponíveis depois que o app é fechado e reaberto. Nenhuma tela nova foi criada: as telas, listas, formulários e botões que já existiam passaram a ler e escrever no banco.
 
-## 2. Evolução do projeto
+## 2. Demonstração em vídeo
 
-No Trabalho 1, o app tinha três telas estilizadas em um único arquivo `MainActivity.kt`, com dados fixos e botões sem ações implementadas. A versão atual separa a navegação, os modelos de dados, o ViewModel, os componentes e as telas.
+O vídeo está em [`video/InvScanExample.mp4`](video/InvScanExample.mp4) (aprox. 1 min 30 s, gravado em um dispositivo Android) e mostra o funcionamento do app e da persistência dos dados.
 
-| Aspecto | Trabalho 1 | Versão atual |
-|---|---|---|
-| Telas | 3 | 11 telas navegáveis |
-| Navegação | Sem navegação funcional | `NavHost`, objeto `Rotas` e barras compartilhadas |
-| Patrimônios | Dados fixos | Cadastro, edição, exclusão, pesquisa e conferência |
-| Locais | Sem gerenciamento completo | Cadastro, edição, exclusão condicionada e detalhes |
-| Persistência | Dados fixos no código | Room 3 para patrimônios e locais |
-| Organização | Um arquivo principal grande | Pastas por responsabilidade |
-| Aparência | Barras inconsistentes | Tema compartilhado, modo escuro e texto ampliado |
+Ele percorre o fluxo principal: cadastrar um local, cadastrar um patrimônio vinculado a esse local (com tipo, série, prateleira, fotos e código), abrir o detalhe do item e editá-lo. Em seguida, o app é fechado pela lista de recentes e reaberto, e a tela Início continua mostrando 1 item, 1 conferido e 1 local, o que comprova que os dados foram gravados no banco.
 
-## 3. Funcionalidades e telas
+## 3. Como o projeto estava no Trabalho 2 e o que mudou
 
-| # | Tela | Responsabilidade |
-|---|---|---|
-| 1 | **Início** | Resumo do inventário, pesquisa e atalhos para locais e busca por código |
-| 2 | **Menu** | Acesso às funcionalidades |
-| 3 | **Patrimônios** | Lista, pesquisa, marcação de conferência, exclusão e criação |
-| 4 | **Detalhe do patrimônio** | Exibe e permite editar os dados do item, seu local e suas imagens |
-| 5 | **Criar item** | Formulário de cadastro de patrimônio |
-| 6 | **Locais** | Lista e permite cadastrar, editar e remover locais |
-| 7 | **Detalhe do local** | Exibe/edita o local, lista os itens vinculados e mostra o progresso de conferência |
-| 8 | **Escanear código** | Localiza um patrimônio pelo código digitado |
-| 9 | **Usuário** | Perfil e conquistas baseadas no uso do app |
-| 10 | **Configurações** | Tema escuro, texto grande e acesso ao suporte |
-| 11 | **Suporte** | Perguntas frequentes e formulário de contato |
+| Aspecto | Trabalho 1 | Trabalho 2 | Trabalho 3 (atual) |
+|---|---|---|---|
+| Telas | 3, estilizadas | 11, com `NavHost` e navegação real | As mesmas 11 telas |
+| Dados | Fixos no código | Listas `mutableStateListOf` na memória | Listas **espelhadas** em um banco Room |
+| Ao fechar o app | Nada era salvo | Todos os dados sumiam | Patrimônios e locais permanecem |
+| Organização | Um único `MainActivity.kt` | Pastas por responsabilidade | Mesma organização, com `AppDatabase`, DAOs e entidades em `data/` |
 
-A leitura de código por câmera ainda não foi implementada: a tela chamada “Escanear” pesquisa o código que a pessoa digita. A seleção de imagens utiliza o Photo Picker do Android.
+No Trabalho 2, o `InvScanViewModel` guardava tudo em `mutableStateListOf`, e as telas desenhavam essas listas. O que mudou para o Trabalho 3 foi:
 
-## 4. Navegação
+- as classes `Patrimonio` e `Local` viraram **entidades Room** (`@Entity`);
+- foram criados dois **DAOs** (`PatrimonioDAO` e `LocalDAO`) e o `AppDatabase`;
+- o `InvScanViewModel` passou a **carregar o banco ao ser criado** e a **gravar cada inserção, edição e remoção** em corrotinas no `Dispatchers.IO`;
+- as telas **não foram alteradas**: continuam lendo as mesmas listas do ViewModel.
 
-As rotas ficam centralizadas em `navigation/Rotas.kt` e o `NavHost` fica em `navigation/AppNavigation.kt`. O `Scaffold` compartilhado controla a barra superior, a barra inferior e as mensagens de `Snackbar`.
+## 4. Telas e funcionalidades
 
-Fluxos principais:
+| # | Tela (arquivo) | Responsabilidade | Print |
+|---|---|---|---|
+| 1 | **Início** (`InicioScreen`) | Resumo do inventário, pesquisa e atalhos | [01](prints/01-inicio.png) |
+| 2 | **Menu** (`MenuScreen`) | Acesso às funcionalidades | [02](prints/02-menu.png) |
+| 3 | **Patrimônios** (`PatrimoniosScreen`) | Lista, pesquisa, conferência, exclusão e criação | [03](prints/03-patrimonios.png) |
+| 4 | **Detalhe do patrimônio** (`PatrimonioDetalheScreen`) | Exibe e edita o item, seu local e suas imagens | [04](prints/04-detalhe-patrimonio.png), [05](prints/05-detalhe-patrimonio-edicao.png) |
+| 5 | **Criar item** (`CriarItemScreen`) | Cadastro de patrimônio | [06](prints/06-criar-item.png) |
+| 6 | **Locais** (`LocaisScreen`) | Lista e cadastra, edita e remove locais | [07](prints/07-locais.png) |
+| 7 | **Detalhe do local** (`LocalDetalheScreen`) | Edita o local, lista seus itens e mostra o progresso de conferência | [08](prints/08-detalhe-local.png) |
+| 8 | **Escanear código** (`EscanearScreen`) | Localiza um patrimônio pelo código digitado | [09](prints/09-escanear.png) |
+| 9 | **Usuário** (`UsuarioScreen`) | Perfil e conquistas | [10](prints/10-usuario.png) |
+| 10 | **Configurações** (`ConfiguracoesScreen`) | Tema escuro, texto grande e acesso ao suporte | [11](prints/11-configuracoes.png), [12](prints/12-configuracoes-tema-escuro.png) |
+| 11 | **Suporte** (`SuporteScreen`) | Perguntas frequentes e contato | [13](prints/13-suporte.png) |
 
-- Início → patrimônio → detalhe do patrimônio → detalhe do local.
-- Patrimônios → criar item → detalhe do novo patrimônio.
-- Início → Locais → detalhe do local → patrimônio relacionado.
-- Início → busca por código → detalhe do patrimônio encontrado.
-- Menu → funcionalidades; Configurações → Suporte.
+A leitura de código por câmera não foi implementada: a tela "Escanear" pesquisa o código digitado. As imagens são escolhidas pelo Photo Picker do Android.
 
-As telas recebem o `InvScanViewModel` e callbacks de navegação, em vez de controlar diretamente o `NavController`.
+### Navegação
 
-## 5. Persistência local com Room 3
+As rotas ficam em `navigation/Rotas.kt` e o `NavHost` em `navigation/AppNavigation.kt`, junto com o `Scaffold`, as barras superior e inferior e os `Snackbar`s. As telas de detalhe recebem o `id` pela rota (`patrimonio/{id}` e `local/{id}`).
 
-A camada de dados foi ampliada para que os patrimônios e locais não dependam apenas de listas temporárias.
-
-### Arquivos principais
-
-| Arquivo | Responsabilidade |
+| Tela | Rota |
 |---|---|
-| `data/AppDatabase.kt` | Define o banco `app_database` e fornece acesso aos DAOs |
-| `data/Patrimonio.kt` | Entidade `patrimonios`, com código, nome, série, descrição, tipo, local, prateleira, estado de conferência e referências de imagem |
-| `data/Local.kt` | Entidade `locais`, com nome e descrição |
-| `data/PatrimonioDAO.kt` | Operações de inserir, atualizar, excluir e consultar patrimônios |
-| `data/LocalDAO.kt` | Operações de inserir, atualizar, excluir e consultar locais |
-| `viewmodel/InvScanViewModel.kt` | Carrega os dados do banco e sincroniza as alterações da interface com os DAOs |
+| Início | `inicio` |
+| Menu | `menu` |
+| Patrimônios | `patrimonios` |
+| Detalhe do patrimônio | `patrimonio/{id}` |
+| Criar item | `criar_item` |
+| Locais | `locais` |
+| Detalhe do local | `local/{id}` |
+| Escanear | `escanear` |
+| Usuário | `usuario` |
+| Configurações | `configuracoes` |
+| Suporte | `suporte` |
 
-O banco usa duas entidades: `Patrimonio` e `Local`. O vínculo é representado por `localId` em cada patrimônio. O ViewModel carrega os registros ao ser inicializado e executa as operações de banco em corrotinas no dispatcher de I/O.
+## 5. Estrutura de arquivos e pastas
 
-### O que é persistido?
+Pacote principal: `com.example.exibirpatrimoniosactivity` (em `app/src/main/java/`).
 
-- **Persistido em Room:** patrimônios e locais.
-- **Ainda não persistido:** perfil do usuário e configurações, incluindo tema escuro e texto grande.
-- **Imagens:** a entidade armazena referências/URIs como texto, separadas por quebra de linha. Não há upload remoto de arquivos.
+```text
+InvScan/
+├── README.md
+├── build.gradle.kts, settings.gradle.kts, gradle/libs.versions.toml
+├── docs/
+│   ├── DOCUMENTACAO.md
+│   ├── prints/            Capturas de tela de cada tela
+│   └── video/             Vídeo de demonstração da persistência
+└── app/
+    ├── build.gradle.kts
+    └── src/main/
+        ├── AndroidManifest.xml
+        ├── res/
+        └── java/com/example/exibirpatrimoniosactivity/
+            ├── MainActivity.kt
+            ├── data/
+            │   ├── AppDatabase.kt        Banco Room (Singleton)
+            │   ├── Patrimonio.kt         Entidade "patrimonios" + enum TipoPatrimonio
+            │   ├── PatrimonioDAO.kt      DAO de patrimônios
+            │   ├── Local.kt              Entidade "locais"
+            │   ├── LocalDAO.kt           DAO de locais
+            │   ├── PerfilUsuario.kt      Perfil (somente em memória)
+            │   ├── Configuracoes.kt      Configurações (somente em memória)
+            │   └── Conquista.kt          Conquista (calculada, não é gravada)
+            ├── navigation/
+            │   ├── AppNavigation.kt      NavHost, Scaffold, barras e Snackbars
+            │   └── Rotas.kt              Rotas centralizadas
+            ├── viewmodel/
+            │   └── InvScanViewModel.kt   Estado das telas + acesso ao banco
+            └── ui/
+                ├── components/           Barras, Campos, Cartoes, Imagens
+                ├── screens/              As 11 telas
+                └── theme/                Color, Dimens, Theme, Type
+```
 
-A exclusão de um local é bloqueada quando ainda existem patrimônios vinculados a ele, evitando deixar itens apontando para um local removido.
+## 6. Estrutura do Room
 
-## 6. Dependências e configuração do ambiente
+### Entidades
 
-O ZIP disponibilizado para esta documentação contém os arquivos Kotlin e os Markdown, mas **não contém** `build.gradle.kts`, `settings.gradle.kts`, `gradle/libs.versions.toml`, `AndroidManifest.xml` ou os arquivos de recursos. Por isso, não é possível confirmar as versões exatas já utilizadas pelo projeto. As dependências abaixo devem ser comparadas com a configuração do projeto Android Studio original; evite declarar versões conflitantes ou duplicar plugins já configurados.
+**`Patrimonio`** (tabela `patrimonios`):
 
-### Bibliotecas usadas pelo código
+| Campo | Tipo | Por que existe |
+|---|---|---|
+| `id` | `Int`, `@PrimaryKey(autoGenerate = true)` | Identifica o item e é usado na rota `patrimonio/{id}` |
+| `codigo` | `String` | Código da etiqueta do patrimônio (ex.: `2-004321`), usado na busca por código |
+| `nome`, `serie`, `descricao` | `String` | Dados exibidos e pesquisados nas listas e no detalhe |
+| `tipo` | `TipoPatrimonio` (enum) | Notebook, Computador ou Outro, com ícone próprio na interface |
+| `localId` | `Int` | Liga o item ao seu local, sem precisar duplicar os dados do local |
+| `prateleira` | `String` | Posição do item dentro do local |
+| `conferido` | `Boolean` | Marca o item como conferido no inventário |
+| `imagens` | `String` | O banco só guarda texto: as URIs das fotos são unidas por quebra de linha |
 
-| Dependência | Para que é usada |
-|---|---|
-| AndroidX Activity Compose (`androidx.activity:activity-compose`) | `ComponentActivity`, `setContent`, integração do Compose e seleção de imagens |
-| Jetpack Compose UI/Foundation/Runtime | Layouts, estado e componentes de interface |
-| Material 3 (`androidx.compose.material3:material3`) | `Scaffold`, campos, botões, diálogos, barras e tema |
-| Material Icons Extended (`androidx.compose.material:material-icons-extended`) | Ícones usados pelas telas |
-| Navigation Compose (`androidx.navigation:navigation-compose`) | Rotas e navegação entre telas |
-| Lifecycle ViewModel Compose (`androidx.lifecycle:lifecycle-viewmodel-compose`) | Obter o ViewModel dentro da composição |
-| Room 3 runtime (`androidx.room3:room3-runtime`) | Banco de dados local |
-| Room 3 compiler (`androidx.room3:room3-compiler`) | Geração de código para banco, entidades e DAOs |
-| Kotlin coroutines | Execução assíncrona das operações de banco |
+**`Local`** (tabela `locais`): `id` (`@PrimaryKey(autoGenerate = true)`), `nome` e `descricao`.
 
-### Exemplo de dependências no `app/build.gradle.kts`
+### DAOs
 
-Este exemplo é um ponto de partida, não uma cópia garantida da configuração atual. O projeto deve usar versões compatíveis com seu Android Gradle Plugin, Kotlin, Compose e KSP. Se o projeto utiliza o Compose BOM, mantenha o BOM existente e não fixe versões individuais para as bibliotecas Compose sem necessidade.
+Os dois DAOs têm os quatro métodos básicos, todos `suspend`:
 
 ```kotlin
-dependencies {
-    // Compose BOM deve estar configurado no projeto.
-    implementation("androidx.activity:activity-compose:<versao-compativel>")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
-
-    implementation("androidx.navigation:navigation-compose:<versao-compativel>")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:<versao-compativel>")
-
-    val roomVersion = "3.0.3"
-    implementation("androidx.room3:room3-runtime:$roomVersion")
-    ksp("androidx.room3:room3-compiler:$roomVersion")
+@Dao
+interface PatrimonioDAO {
+    @Insert suspend fun inserir(patrimonio: Patrimonio)
+    @Update suspend fun atualizar(patrimonio: Patrimonio)
+    @Delete suspend fun deletar(patrimonio: Patrimonio)
+    @Query("SELECT * FROM patrimonios ORDER BY id DESC")
+    suspend fun buscarPatrimonios(): List<Patrimonio>
 }
 ```
 
-O Room 3 usa o pacote `androidx.room3`, exige processamento por **KSP** e oferece APIs de DAO baseadas em corrotinas. Não substitua essas dependências por `androidx.room:room-runtime`/`kapt` sem migrar o código, pois são configurações de Room 2.x.
+`LocalDAO` segue o mesmo formato, com `buscarLocais()` (`SELECT * FROM locais`).
 
-O plugin KSP precisa estar configurado com uma versão compatível com a versão do Kotlin. Se o projeto ainda não o declarar, adicione-o ao bloco `plugins` do módulo ou ao gerenciamento central de plugins, conforme a organização do projeto:
+### Database
 
 ```kotlin
-plugins {
-    id("com.google.devtools.ksp") version "<versao-ksp-compativel-com-kotlin>"
+@Database(entities = [Patrimonio::class, Local::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun patrimonioDAO(): PatrimonioDAO
+    abstract fun localDAO(): LocalDAO
+    // Singleton: companion object + @Volatile + synchronized
 }
 ```
+
+O banco se chama `app_database` e é criado uma única vez pelo padrão Singleton (`companion object`, `@Volatile` e `synchronized`).
+
+## 7. Decisões tomadas
+
+### Como estruturamos as queries do DAO
+
+Mantivemos só os métodos básicos (inserir, atualizar, deletar e buscar todos). A pesquisa por nome, código e série, a busca por código, a lista de itens de um local e o progresso de conferência são feitos no `InvScanViewModel`, **filtrando as listas já carregadas em memória**. Como um inventário de sala tem poucos itens, isso evitou reescrever a lógica que já funcionava desde o Trabalho 2.
+
+### Como o ViewModel usa o banco
+
+Foi a decisão central do trabalho. Em vez de trocar as listas das telas, o ViewModel mantém as listas `mutableStateListOf` e as trata como **espelho do banco**:
+
+1. **Ao iniciar**, o ViewModel lê `buscarLocais()` e `buscarPatrimonios()` e preenche as listas.
+2. **A cada alteração** (adicionar, editar, conferir, remover), o ViewModel atualiza a lista em memória, para a tela reagir na hora, e grava a mesma mudança no banco.
+3. **Toda operação de banco** roda em `CoroutineScope(Dispatchers.IO).launch { ... }` e dentro de `try/catch` com `Log.e(...)`, para não travar a interface.
+
+Isso permitiu que as 11 telas continuassem iguais.
+
+### Outras decisões
+
+- **IDs:** o ViewModel calcula o próximo id (`maior id + 1`) para poder devolvê-lo imediatamente à navegação (a tela de detalhe do item recém-criado abre pelo id). Como o id é conhecido antes da gravação assíncrona, a navegação não depende do banco ter terminado de inserir.
+- **Enum no banco:** `TipoPatrimonio` é guardado diretamente na entidade.
+- **Imagens:** só as referências (URIs) são guardadas, como texto separado por quebra de linha. Não há upload de arquivos.
+- **Exclusão de local:** é bloqueada quando ainda existem patrimônios vinculados a ele, para nenhum item ficar apontando para um local removido.
+- **O que não vai para o banco:** perfil, configurações (tema escuro, texto grande, confirmar exclusão) e conquistas continuam em memória. As conquistas são calculadas a partir dos itens e locais salvos.
+
+### Dificuldades: de `mutableStateListOf` para o Room
+
+- **Room 3:** o projeto usa `androidx.room3` (e não o `androidx.room` das aulas), com o compilador via **KSP**. O plugin KSP precisou ser declarado no `build.gradle.kts` da raiz (`apply false`) e aplicado no módulo `app`, antes da linha `ksp(...)`. O projeto não declara `room-ktx`: os DAOs `suspend` funcionam só com o `room3-runtime`.
+- **Operações fora da thread principal:** o Room não permite acesso ao banco na thread principal, então toda leitura e escrita foi movida para `Dispatchers.IO`.
+- **Dados texto-only:** a lista de imagens teve de virar um único campo `String`, com funções de apoio (`listaImagens` e `paraTexto()`) para converter nos dois sentidos.
+
+## 8. Teste de persistência
+
+O teste de aceitação do trabalho é: adicionar um item, fechar o app completamente e abri-lo de novo, e o item continua lá.
+
+- **Vídeo:** [`video/InvScanExample.mp4`](video/InvScanExample.mp4) mostra o teste completo (seção 2).
+- **Resultado esperado e observado:** após cadastrar o local "Pará Lanches" e o item "PC RECEPÇÃO" e fechar o app pela lista de recentes, a tela Início, ao reabrir, mostra 1 item, 1 conferido e 1 local.
+
+## 9. Dependências, configuração e execução
+
+Versões usadas pelo projeto (`gradle/libs.versions.toml` e `app/build.gradle.kts`):
+
+| Item | Versão |
+|---|---|
+| Android Gradle Plugin | 9.3.2 |
+| Kotlin | 2.2.10 |
+| KSP (`com.google.devtools.ksp`) | 2.3.4 |
+| Compose BOM | 2026.02.01 |
+| Room 3 (`room3-runtime` e `room3-compiler`) | 3.0.3 |
+| Navigation Compose | 2.9.0 (declarada no módulo) e 2.10.2 (catálogo) |
+| Lifecycle ViewModel Compose | 2.9.0 |
+| Activity Compose | 1.13.0 |
+| Material 3 | 1.3.1 (declarada no módulo) e 1.4.0 (catálogo) |
+| `minSdk` / `targetSdk` / `compileSdk` | 24 / 37 / 37 |
+
+Dependências do Room, no `app/build.gradle.kts`:
+
+```kotlin
+val room_version = "3.0.3"
+implementation("androidx.room3:room3-runtime:$room_version")
+ksp("androidx.room3:room3-compiler:$room_version")
+```
+
+O plugin KSP é declarado no `build.gradle.kts` da raiz (`id("com.google.devtools.ksp") version "2.3.4" apply false`) e aplicado em `app/build.gradle.kts`.
 
 ### Como executar
 
-1. Abra o projeto Android Studio completo, não apenas a pasta de arquivos Kotlin.
-2. Confira o plugin KSP e as dependências no Gradle.
-3. Execute **Sync Project with Gradle Files**.
-4. Corrija conflitos de versões ou erros de compilação antes de executar.
-5. Inicie um emulador ou conecte um dispositivo Android com depuração USB habilitada.
-6. Selecione a configuração do app e clique em **Run**.
+1. Clone o repositório e abra a pasta raiz no Android Studio.
+2. Execute **Sync Project with Gradle Files**.
+3. Inicie um emulador ou conecte um dispositivo Android com depuração USB.
+4. Selecione a configuração `app` e clique em **Run**.
 
-## 7. Organização do código
+## 10. Limitações e próximos passos
 
-```text
-data/             Entidades Room, banco, DAOs e modelos
-navigation/       Rotas e NavHost
-viewmodel/        Estado compartilhado e operações de persistência
-ui/components/    Barras, campos, cartões e imagens reutilizáveis
-ui/screens/       As 11 telas
-ui/theme/         Cores, tipografia, dimensões e tema
-```
-
-- **Rotas centralizadas:** `Rotas.kt` evita espalhar strings de rota pelo projeto.
-- **Navegação centralizada:** `AppNavigation.kt` mantém o `NavHost`, as barras e os `Snackbar`s num único lugar.
-- **ViewModel compartilhado:** as telas usam o mesmo `InvScanViewModel` para consultar e alterar patrimônios e locais.
-- **Componentes reutilizáveis:** componentes visuais compartilhados reduzem duplicação e mantêm consistência.
-- **Tema único:** as cores usam `MaterialTheme.colorScheme`, permitindo tema claro/escuro; a opção de texto grande altera a escala tipográfica usada pelo tema.
-
-## 8. Complexidade da tela de detalhes
-
-A tela de detalhe do patrimônio oferece edição no próprio local, relaciona o patrimônio a um local e permite navegar para o detalhe desse local. O detalhe do local reúne os itens associados e calcula o progresso de conferência a partir da quantidade de itens conferidos em relação ao total.
-
-Essas relações permitem responder perguntas comuns de inventário, como onde o item está e quais outros patrimônios estão no mesmo local.
-
-## 9. Limitações e próximos passos
-
-- Implementar leitura de código de barras/QR pela câmera.
-- Persistir perfil e configurações, caso seja necessário mantê-los entre execuções.
-- Avaliar a persistência e as permissões de acesso às imagens selecionadas.
-- Incluir os arquivos Gradle, manifesto, recursos e capturas de tela no repositório completo para que a configuração e a documentação possam ser reproduzidas sem depender do ambiente local.
+- Leitura de código de barras/QR pela câmera ainda não foi implementada.
+- Perfil, configurações e conquistas ainda não são persistidos.
+- As telas de detalhe obtêm o item pelo `id` na lista que o ViewModel carregou do banco, e não por uma consulta própria no DAO (por exemplo, `buscarPorId`).
+- Apenas as URIs das imagens são guardadas; é preciso avaliar a validade das permissões de acesso a elas entre execuções.
+- O banco está na `version = 1` e não possui migrações.
