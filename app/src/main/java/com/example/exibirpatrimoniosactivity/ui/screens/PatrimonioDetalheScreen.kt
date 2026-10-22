@@ -38,8 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.exibirpatrimoniosactivity.data.Patrimonio
-import com.example.exibirpatrimoniosactivity.data.listaImagens
-import com.example.exibirpatrimoniosactivity.data.paraTexto
 import com.example.exibirpatrimoniosactivity.ui.components.CarrosselImagens
 import com.example.exibirpatrimoniosactivity.ui.components.EstadoVazio
 import com.example.exibirpatrimoniosactivity.ui.components.FormTextField
@@ -73,6 +71,12 @@ fun PatrimonioDetalheScreen(
     }
 }
 
+/**
+ * Detalhe do item. Vai além de só mostrar os dados:
+ *  1) o item pode ser EDITADO ali mesmo (campos, fotos, local);
+ *  2) mostra dados do LOCAL (outra lista) e abre o detalhe do local (navegação secundária);
+ *  3) permite marcar o item como conferido.
+ */
 @Composable
 private fun DetalheConteudo(
     vm: InvScanViewModel,
@@ -89,7 +93,7 @@ private fun DetalheConteudo(
     var descricao by rememberSaveable(patrimonio, editando) { mutableStateOf(patrimonio.descricao) }
     var prateleira by rememberSaveable(patrimonio, editando) { mutableStateOf(patrimonio.prateleira) }
     var localId by rememberSaveable(patrimonio, editando) { mutableStateOf(patrimonio.localId) }
-    var imagens by remember(patrimonio, editando) { mutableStateOf(patrimonio.listaImagens) }
+    var imagens by remember(patrimonio, editando) { mutableStateOf(patrimonio.imagens) }
 
     val seletorFotos = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(5)
@@ -127,7 +131,7 @@ private fun DetalheConteudo(
 
         // Fotos
         CarrosselImagens(
-            imagens = if (editando) imagens else patrimonio.listaImagens,
+            imagens = if (editando) imagens else patrimonio.imagens,
             onRemoverAtual = aoRemoverFoto.takeIf { editando }
         )
         if (editando) {
@@ -269,7 +273,7 @@ private fun DetalheConteudo(
                                 descricao = descricao.trim(),
                                 prateleira = prateleira.trim(),
                                 localId = localId,
-                                imagens = imagens.paraTexto()
+                                imagens = imagens
                             )
                         )
                         editando = false
